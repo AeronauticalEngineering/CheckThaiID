@@ -332,7 +332,7 @@
                 course: document.getElementById('form-course').value,
                 seat: document.getElementById('form-seat').value
             };
-            const action = id ? 'updateUser' : 'addUser';
+            const action = id ? 'updateStudent' : 'addStudent';
 
             try {
                 const response = await fetch(WEB_APP_URL, {
