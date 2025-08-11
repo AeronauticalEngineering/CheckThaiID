@@ -12,152 +12,262 @@
         }
     </script>
 </head>
-<body class="bg-slate-100 font-sarabun flex items-center justify-center  min-h-screen">
+<body class="bg-slate-100 font-sarabun flex items-center justify-center min-h-screen">
 
     <div class="w-full max-w-sm mx-auto p-4">
         <div id="loading-state" class="text-center">
             <p class="text-slate-500">กำลังตรวจสอบสถานะการลงทะเบียน...</p>
         </div>
 
-        <div id="profile-view" class="hidden bg-white p-6 rounded-2xl shadow-lg">
-            <div class="bg-primary-blue text-white w-full py-4 mb-6 rounded-2xl flex flex-col items-center justify-center">
-                <span class="text-base">เลขที่นั่งของคุณคือ</span>
-                <strong id="profile-seat" class="text-5xl font-bold leading-tight"></strong>
+        <div id="profile-view" class="hidden bg-white rounded-2xl shadow-lg w-full flex flex-col">
+            <div class="p-6 text-center border-b border-slate-200">
+                <h2 class="text-xl font-bold text-primary-blue">สวัสดี, <span id="profile-welcome-name"></span></h2>
+                <p class="text-slate-500 text-sm">นี่คือรายการที่คุณลงทะเบียนไว้</p>
             </div>
-            <div class="space-y-3 text-left">
-                <p><strong class="block text-primary-blue">ชื่อ - สกุล:</strong> <span id="profile-name" class="text-slate-700"></span></p>
-                <p><strong class="block text-primary-blue">รหัสนักศึกษา:</strong> <span id="profile-student-id" class="text-slate-700"></span></p>
-                <p><strong class="block text-primary-blue">หลักสูตร:</strong> <span id="profile-course" class="text-slate-700"></span></p>
+            
+            <div class="flex border-b border-slate-200">
+                <button id="tab-btn-current" onclick="switchTab('current')" class="tab-btn flex-1 py-3 font-semibold border-b-2">รายการปัจจุบัน</button>
+                <button id="tab-btn-history" onclick="switchTab('history')" class="tab-btn flex-1 py-3 font-semibold border-b-2">ประวัติ</button>
             </div>
-
-            <div id="checkin-status-banner" class="mt-6 p-4 rounded-lg text-center font-semibold">
-                <p id="checkin-status-message"></p>
+            
+            <div class="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
+                <div id="tab-content-current" class="tab-content"></div>
+                <div id="tab-content-history" class="tab-content hidden"></div>
             </div>
-            </div>
+        </div>
         
-        <div id="register-view" class="hidden bg-white p-8 rounded-2xl shadow-lg text-center">
-            <h1 class="text-2xl font-bold text-primary-blue mb-2">ตรวจสอบเลขที่นั่ง</h1>
-            <p class="text-slate-500 ">กรุณากรอกเลขบัตรประชาชน 13 หลัก</p>
-            <p class="text-slate-500 mb-6">เพื่อยืนยันตัวตน</p>
+        <div id="register-container" class="hidden mt-6">
+            </div>
 
+    </div>
+
+    <template id="register-template">
+        <div id="register-view" class="bg-white p-8 rounded-2xl shadow-lg text-center">
+            <h1 id="register-title" class="text-2xl font-bold text-primary-blue mb-2">ลงทะเบียน</h1>
+            <p id="register-subtitle" class="text-slate-500 mb-6">กรุณากรอกเลขบัตรประชาชน 13 หลัก</p>
             <form id="liff-form" onsubmit="handleRegister(event)">
                 <div class="mb-4">
                     <input type="tel" id="citizen-id-input" pattern="[0-9]*" maxlength="13" placeholder="เลขบัตรประชาชน" class="w-full text-center text-xl tracking-wider p-3 border-2 border-slate-200 rounded-lg" required>
                 </div>
-                <button type="submit" id="submit-button" class="w-full bg-primary-yellow text-primary-blue font-bold py-3 px-5 rounded-lg">ยืนยันการลงทะเบียน</button>
+                <button type="submit" id="submit-button" class="w-full bg-primary-yellow text-primary-blue font-bold py-3 px-5 rounded-lg">ยืนยัน</button>
             </form>
-             <div id="status-message-container" class="mt-4 min-h-[24px]">
-                 <p id="status-message" class="font-semibold"></p>
-             </div>
+            <div id="status-message-container" class="mt-4 min-h-[24px]">
+                <p id="status-message" class="font-semibold"></p>
+            </div>
             <div id="success-view" class="hidden">
-                 <button id="check-data-button" class="w-full mt-4 bg-primary-blue text-white font-bold py-3 px-5 rounded-lg">
-                     ตรวจสอบข้อมูล (5)
-                 </button>
+                <button id="check-data-button" class="w-full mt-4 bg-primary-blue text-white font-bold py-3 px-5 rounded-lg">ตรวจสอบข้อมูล (5)</button>
             </div>
         </div>
-    </div>
+
+        <div id="refresh-view" class="hidden bg-white p-6 rounded-2xl shadow-lg text-center">
+            <h2 class="text-xl font-bold text-primary-blue">อัปเดตข้อมูล</h2>
+            <p class="text-slate-500 mb-4 text-sm">หากมีการลงทะเบียนหลักสูตรใหม่ ให้กดปุ่มเพื่ออัปเดต</p>
+            <button id="refresh-button" class="w-full bg-primary-blue text-white font-bold py-3 px-5 rounded-lg hover:bg-opacity-90">
+                🔄 อัปเดตข้อมูลล่าสุด
+            </button>
+       </div>
+    </template>
+
 
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script>
-        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzsdS4dHNTJePpw8uA5n4FfoVgePyutx1IYJ4booO2yr1IJJK3I0PjtXpuQawolH3a1mA/exec'; 
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbypzA8mOVHpkx8-SOzszGLbbNMmpF4tyRlIKW8jdxN7cboVe6J6mO2MYb0W3NBG5k__Gg/exec'; // ⚠️ **สำคัญ: แก้ไขเป็น URL ของคุณ**
+        const LIFF_ID = '2007863251-DrxJ6Ya1';         // ⚠️ **สำคัญ: แก้ไข LIFF ID ของคุณ**
         let lineUserId = null;
+        let currentUserCitizenId = null; // ⭐ **CHANGED**: เปลี่ยนเป็นตัวแปรสำหรับเก็บเลขบัตรประชาชน
+
+        document.addEventListener('DOMContentLoaded', main);
 
         async function main() {
-            // ... ฟังก์ชัน main ยังคงเหมือนเดิม ...
             try {
-                await liff.init({ liffId: "2006974351-9V0oqqwD" }); 
+                await liff.init({ liffId: LIFF_ID });
                 if (liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
                     lineUserId = profile.userId;
-                    await checkRegistrationStatus(lineUserId);
+                    await initialCheck(lineUserId);
                 } else {
                     document.getElementById('loading-state').textContent = "กรุณาเปิดในแอปพลิเคชัน LINE";
                 }
             } catch (error) {
                 console.error(error);
-                document.getElementById('loading-state').innerHTML = `<p class="text-red-500">เกิดข้อผิดพลาดในการเชื่อมต่อ LIFF</p>`;
+                document.getElementById('loading-state').innerHTML = `<p class="text-red-500">เกิดข้อผิดพลาด</p>`;
             }
         }
-
-        async function checkRegistrationStatus(userId) {
-            // ... ฟังก์ชัน checkRegistrationStatus ยังคงเหมือนเดิม ...
-            document.getElementById('loading-state').classList.remove('hidden');
-            document.getElementById('register-view').classList.add('hidden');
-            document.getElementById('profile-view').classList.add('hidden');
-
+        
+        async function initialCheck(userId) {
             try {
                 const response = await fetch(`${WEB_APP_URL}?action=searchByLineId&lineId=${userId}`);
                 const result = await response.json();
-                
+
                 document.getElementById('loading-state').classList.add('hidden');
 
-                if (result.found) {
-                    showProfile(result);
+                if (result.found && Array.isArray(result.data) && result.data.length > 0) {
+                    showProfile(result.data);
+                    setupRefreshButton();
                 } else {
-                    document.getElementById('register-view').classList.remove('hidden');
+                    setupRegistrationForm();
                 }
             } catch (e) {
-                 document.getElementById('loading-state').innerHTML = `<p class="text-red-500">การเชื่อมต่อล้มเหลว</p>`;
+                document.getElementById('loading-state').classList.add('hidden');
+                const container = document.getElementById('register-container');
+                container.innerHTML = `<p class="text-red-500 text-center">การเชื่อมต่อล้มเหลว</p>`;
+                container.classList.remove('hidden');
             }
         }
 
-        /**
-         * ⭐ START: แก้ไขฟังก์ชัน showProfile
-         * เพิ่ม Logic การแสดงผลสถานะการเข้าร่วม
-         */
-        function showProfile(data) {
-            // แสดงข้อมูลพื้นฐาน
-            document.getElementById('profile-name').textContent = data.name;
-            document.getElementById('profile-student-id').textContent = data.studentId;
-            document.getElementById('profile-course').textContent = data.course;
-            document.getElementById('profile-seat').textContent = data.seat;
-            
-            // ดึง Element ของป้ายประกาศ
-            const statusBanner = document.getElementById('checkin-status-banner');
-            const statusMessage = document.getElementById('checkin-status-message');
+        function setupRegistrationForm() {
+            const registerContainer = document.getElementById('register-container');
+            const template = document.getElementById('register-template');
+            registerContainer.innerHTML = '';
+            registerContainer.appendChild(template.content.cloneNode(true));
+            document.getElementById('refresh-view').classList.add('hidden');
+            document.getElementById('register-view').classList.remove('hidden');
+            registerContainer.classList.remove('hidden');
+        }
 
-            // ตรวจสอบสถานะการเข้าร่วมจากคอลัมน์ H
-            if (data.status === 'เข้าร่วมแล้ว') {
-                // **กรณีเข้าร่วมแล้ว:** แสดงป้ายสีเขียวพร้อมเวลา
-                statusBanner.className = 'mt-6 p-4 rounded-lg text-center font-semibold bg-green-100 text-green-800';
-                
-                let checkinTime = 'ไม่ระบุเวลา';
-                if (data.timestamp) {
-                    // จัดรูปแบบเวลาให้อ่านง่าย
-                    checkinTime = new Date(data.timestamp).toLocaleString('th-TH', {
-                        year: 'numeric', month: 'long', day: 'numeric', 
-                        hour: '2-digit', minute: '2-digit', second: '2-digit'
-                    });
-                }
-                statusMessage.innerHTML = `ยืนยันการเข้าร่วมแล้ว<br><span class="text-sm font-normal"> ${checkinTime}</span>`;
-
-            } else {
-                // **กรณียังไม่เข้าร่วม:** แสดงป้ายสีแดง
-                statusBanner.className = 'mt-6 p-4 rounded-lg text-center font-semibold bg-red-100 text-red-800';
-                statusMessage.textContent = 'กรุณานำบัตรประชาชนของท่านยื่นให้เจ้าหน้าที่เพื่อสแกนยืนยันการเข้าร่วม';
-            }
-
-            // แสดงผลหน้าโปรไฟล์
+        function setupRefreshButton() {
+            const registerContainer = document.getElementById('register-container');
+            const template = document.getElementById('register-template');
+            registerContainer.innerHTML = '';
+            registerContainer.appendChild(template.content.cloneNode(true));
             document.getElementById('register-view').classList.add('hidden');
-            document.getElementById('profile-view').classList.remove('hidden');
+            document.getElementById('refresh-view').classList.remove('hidden');
+            document.getElementById('refresh-button').onclick = handleUpdateAndRefresh;
+            registerContainer.classList.remove('hidden');
         }
-        /** ⭐ END: แก้ไขฟังก์ชัน showProfile */
-        
+
+        async function handleUpdateAndRefresh(event) {
+            const btn = event.currentTarget;
+            btn.disabled = true;
+            btn.innerHTML = `กำลังอัปเดต...`;
+
+            if (!currentUserCitizenId) { // ⭐ **CHANGED**: ตรวจสอบตัวแปร citizenId
+                btn.innerHTML = 'ไม่พบเลขบัตรประชาชน';
+                setTimeout(() => { btn.innerHTML = '🔄 อัปเดตข้อมูลล่าสุด'; btn.disabled = false; }, 2000);
+                return;
+            }
+
+            try {
+                const updateResponse = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'updateLineId',
+                        data: { citizenId: currentUserCitizenId, lineUserId: lineUserId } // ⭐ **CHANGED**: ส่ง citizenId
+                    }),
+                });
+                const updateResult = await updateResponse.json();
+                if (!updateResult.success) throw new Error(updateResult.message || 'การอัปเดตล้มเหลว');
+
+                const searchResponse = await fetch(`${WEB_APP_URL}?action=searchByLineId&lineId=${lineUserId}`);
+                const searchResult = await searchResponse.json();
+                if (searchResult.found) {
+                    showProfile(searchResult.data);
+                    btn.innerHTML = `อัปเดตสำเร็จ!`;
+                } else {
+                    window.location.reload();
+                }
+
+            } catch (e) {
+                console.error("Update and Refresh failed:", e);
+                btn.innerHTML = `ผิดพลาด!`;
+            } finally {
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = `🔄 อัปเดตข้อมูลล่าสุด`;
+                }, 2000);
+            }
+        }
+
+        function switchTab(tabName) {
+            const tabs = ['current', 'history'];
+            tabs.forEach(tab => {
+                const btn = document.getElementById(`tab-btn-${tab}`);
+                const content = document.getElementById(`tab-content-${tab}`);
+                if (tab === tabName) {
+                    btn.classList.add('border-primary-blue', 'text-primary-blue');
+                    btn.classList.remove('border-transparent', 'text-slate-500', 'hover:border-slate-300');
+                    content.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('border-primary-blue', 'text-primary-blue');
+                    btn.classList.add('border-transparent', 'text-slate-500', 'hover:border-slate-300');
+                    content.classList.add('hidden');
+                }
+            });
+        }
+
+        function showProfile(registrations) {
+            // ⭐ **CHANGED**: เก็บรหัสบัตรประชาชนไว้ในตัวแปรส่วนกลาง
+            // ตรวจสอบให้แน่ใจว่า object 'reg' มี 'citizenId' อยู่จริง
+            if (registrations[0].citizenId) {
+                 currentUserCitizenId = registrations[0].citizenId;
+            }
+           
+            document.getElementById('profile-view').classList.remove('hidden');
+            document.getElementById('profile-welcome-name').textContent = registrations[0].name;
+
+            const currentContainer = document.getElementById('tab-content-current');
+            const historyContainer = document.getElementById('tab-content-history');
+            currentContainer.innerHTML = '';
+            historyContainer.innerHTML = '';
+
+            const currentRegs = registrations.filter(reg => reg.status !== 'เข้าร่วมแล้ว');
+            const historyRegs = registrations.filter(reg => reg.status === 'เข้าร่วมแล้ว');
+
+            if (currentRegs.length > 0) {
+                currentRegs.forEach(reg => currentContainer.appendChild(createRegistrationCard(reg)));
+            } else {
+                currentContainer.innerHTML = `<p class="text-center text-slate-400 p-4">ไม่มีรายการที่กำลังจะมาถึง</p>`;
+            }
+
+            if (historyRegs.length > 0) {
+                historyRegs.forEach(reg => historyContainer.appendChild(createRegistrationCard(reg)));
+            } else {
+                historyContainer.innerHTML = `<p class="text-center text-slate-400 p-4">ยังไม่มีประวัติการเข้าร่วม</p>`;
+            }
+
+            switchTab('current');
+        }
+
+        function createRegistrationCard(reg) {
+            const card = document.createElement('div');
+            card.className = 'bg-white p-4 rounded-xl border border-slate-200';
+            const statusBannerClass = (reg.status === 'เข้าร่วมแล้ว') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+            const statusMessageText = (reg.status === 'เข้าร่วมแล้ว')
+                ? `ยืนยันการเข้าร่วมแล้ว<br><span class="text-sm font-normal">${new Date(reg.timestamp).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })} น.</span>`
+                : 'รอการยืนยันที่จุดเช็คอิน';
+
+            card.innerHTML = `
+                <div class="flex gap-4">
+                    <div class="bg-primary-blue text-white w-20 h-20 rounded-xl flex flex-col items-center justify-center flex-shrink-0">
+                        <span class="text-xs">ที่นั่ง</span>
+                        <strong class="text-3xl font-bold leading-tight">${reg.seat || '-'}</strong>
+                    </div>
+                    <div class="space-y-1 text-left text-sm flex-grow">
+                        <p><strong class="block text-primary-blue text-xs">หลักสูตร:</strong> <span class="text-slate-700">${reg.course}</span></p>
+                        <p><strong class="block text-primary-blue text-xs">กิจกรรม:</strong> <span class="text-slate-700">${reg.activity}</span></p>
+                    </div>
+                </div>
+                <div class="mt-3 p-2 rounded-lg text-center font-semibold text-xs ${statusBannerClass}">
+                    <p>${statusMessageText}</p>
+                </div>
+            `;
+            return card;
+        }
+
         async function handleRegister(event) {
-            // ... ฟังก์ชัน handleRegister ยังคงเหมือนเดิม ...
             event.preventDefault();
-            const citizenId = document.getElementById('citizen-id-input').value;
+            const citizenId = document.getElementById('citizen-id-input').value; // ⭐ **CHANGED**: ดึงค่าจาก citizen-id-input
             const statusDiv = document.getElementById('status-message');
             const submitBtn = document.getElementById('submit-button');
             submitBtn.disabled = true;
             submitBtn.textContent = 'กำลังบันทึก...';
-            statusDiv.textContent = '';
+
             try {
                 const response = await fetch(WEB_APP_URL, {
                     method: 'POST',
                     body: JSON.stringify({
                         action: 'updateLineId',
-                        data: { citizenId: citizenId, lineUserId: lineUserId }
+                        data: { citizenId: citizenId, lineUserId: lineUserId } // ⭐ **CHANGED**: ส่ง citizenId
                     }),
                 });
                 const result = await response.json();
@@ -174,28 +284,26 @@
                         checkBtn.textContent = `ตรวจสอบข้อมูล (${countdown})`;
                         if (countdown <= 0) {
                             clearInterval(interval);
-                            checkRegistrationStatus(lineUserId);
+                            window.location.reload();
                         }
                     }, 1000);
                     checkBtn.onclick = () => {
                         clearInterval(interval);
-                        checkRegistrationStatus(lineUserId);
+                        window.location.reload();
                     };
                 } else {
                     statusDiv.textContent = result.message || 'เกิดข้อผิดพลาด';
                     statusDiv.className = 'font-semibold text-red-600';
                     submitBtn.disabled = false;
-                    submitBtn.textContent = 'ยืนยันการลงทะเบียน';
+                    submitBtn.textContent = 'ยืนยัน';
                 }
             } catch (e) {
                 statusDiv.textContent = 'การเชื่อมต่อล้มเหลว';
                 statusDiv.className = 'font-semibold text-red-600';
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'ยืนยันการลงทะเบียน';
+                submitBtn.textContent = 'ยืนยัน';
             }
         }
-
-        document.addEventListener('DOMContentLoaded', main);
     </script>
 </body>
 </html>
